@@ -1,0 +1,288 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Bản đồ sức khỏe TP.HCM</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<style>
+/* Layout: tiêu đề, hàng nút lớp, rồi bản đồ (trái) và danh sách điểm (phải). Một cột trên điện thoại. */
+:root {
+  --bg: #eef3f0;
+  --panel: #f9fbfa;
+  --panel-a: rgba(249, 251, 250, .88);
+  --fg: #14231c;
+  --muted: #55665d;
+  --line: #d0dbd4;
+  --land: #e4ece7;
+  --green: #2b7a4b;
+  --water: #1d6fb0;
+  --alert: #c4402a;
+  --pin-ink: #ffffff;
+  --font-display: "Bricolage Grotesque", "Be Vietnam Pro", system-ui, sans-serif;
+  --font-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1713; --panel: #16231d; --panel-a: rgba(22, 35, 29, .88); --fg: #e4eee8; --muted: #95a99d;
+    --line: #28392f; --land: #111c17; --green: #62c18a; --water: #5eaae6; --alert: #f2785d; --pin-ink: #0e1713;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1713; --panel: #16231d; --panel-a: rgba(22, 35, 29, .88); --fg: #e4eee8; --muted: #95a99d;
+  --line: #28392f; --land: #111c17; --green: #62c18a; --water: #5eaae6; --alert: #f2785d; --pin-ink: #0e1713;
+  color-scheme: dark;
+}
+
+/* Leaflet core (rút gọn, vì trang không tải được stylesheet ngoài) */
+.leaflet-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-tile-container,
+.leaflet-pane > svg, .leaflet-pane > canvas, .leaflet-zoom-box, .leaflet-image-layer, .leaflet-layer { position: absolute; left: 0; top: 0; }
+.leaflet-container { overflow: hidden; -webkit-tap-highlight-color: transparent; }
+.leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow { user-select: none; -webkit-user-drag: none; }
+.leaflet-container .leaflet-overlay-pane svg { max-width: none !important; max-height: none !important; }
+.leaflet-container .leaflet-marker-pane img, .leaflet-container .leaflet-tile-pane img, .leaflet-container img.leaflet-tile { max-width: none !important; max-height: none !important; width: auto; padding: 0; }
+.leaflet-tile { filter: inherit; visibility: hidden; }
+.leaflet-tile-loaded { visibility: inherit; }
+.leaflet-zoom-box { width: 0; height: 0; box-sizing: border-box; z-index: 800; }
+.leaflet-pane { z-index: 400; }
+.leaflet-tile-pane { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane { z-index: 500; }
+.leaflet-marker-pane { z-index: 600; }
+.leaflet-tooltip-pane { z-index: 650; }
+.leaflet-popup-pane { z-index: 700; }
+.leaflet-map-pane canvas { z-index: 100; }
+.leaflet-map-pane svg { z-index: 200; }
+.leaflet-control { position: relative; z-index: 800; pointer-events: auto; float: left; clear: both; }
+.leaflet-top, .leaflet-bottom { position: absolute; z-index: 1000; pointer-events: none; }
+.leaflet-top { top: 0; } .leaflet-right { right: 0; } .leaflet-bottom { bottom: 0; } .leaflet-left { left: 0; }
+.leaflet-right .leaflet-control { float: right; }
+.leaflet-top .leaflet-control { margin-top: 10px; } .leaflet-bottom .leaflet-control { margin-bottom: 10px; }
+.leaflet-left .leaflet-control { margin-left: 10px; } .leaflet-right .leaflet-control { margin-right: 10px; }
+.leaflet-fade-anim .leaflet-popup { opacity: 0; transition: opacity .2s linear; }
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup { opacity: 1; }
+.leaflet-zoom-animated { transform-origin: 0 0; }
+.leaflet-zoom-anim .leaflet-zoom-animated { transition: transform .25s cubic-bezier(0, 0, .25, 1); }
+.leaflet-zoom-anim .leaflet-tile, .leaflet-pan-anim .leaflet-tile { transition: none; }
+.leaflet-zoom-anim .leaflet-zoom-hide { visibility: hidden; }
+.leaflet-interactive { cursor: pointer; }
+.leaflet-grab { cursor: grab; }
+.leaflet-dragging .leaflet-grab { cursor: move; }
+.leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-image-layer, .leaflet-pane > svg path, .leaflet-tile-container { pointer-events: none; }
+.leaflet-marker-icon.leaflet-interactive, .leaflet-pane > svg path.leaflet-interactive { pointer-events: auto; }
+.leaflet-popup { position: absolute; text-align: center; margin-bottom: 20px; }
+.leaflet-popup-content-wrapper { padding: 1px; text-align: left; border-radius: 12px; }
+.leaflet-popup-content { margin: 14px 18px; min-height: 1px; }
+.leaflet-popup-tip-container { width: 40px; height: 20px; position: absolute; left: 50%; margin-top: -1px; margin-left: -20px; overflow: hidden; pointer-events: none; }
+.leaflet-popup-tip { width: 17px; height: 17px; padding: 1px; margin: -10px auto 0; transform: rotate(45deg); }
+.leaflet-container a.leaflet-popup-close-button { position: absolute; top: 4px; right: 6px; width: 24px; height: 24px; font: 18px/24px var(--font-body); text-align: center; text-decoration: none; color: var(--muted); }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel); color: var(--fg); box-shadow: 0 4px 18px rgba(0, 0, 0, .28); }
+
+/* Trang */
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding-block: 24px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.top { display: flex; flex-direction: column; gap: 6px; max-width: 70ch; }
+.eyebrow { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--green); }
+h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 5vw, 40px); line-height: 1.1; letter-spacing: -.01em; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px;
+  font: inherit; font-weight: 500; color: var(--fg); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 999px; cursor: pointer;
+}
+.chip[aria-pressed="false"] { opacity: .55; }
+.chip[aria-pressed="false"] .chip-t { text-decoration: line-through; text-decoration-thickness: 1px; }
+.chip-n { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+.chip:focus-visible, .item:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.dot, .pin { display: inline-grid; place-items: center; border-radius: 50%; background: var(--c); color: var(--pin-ink); }
+.dot { width: 28px; height: 28px; }
+.pin { width: 34px; height: 34px; border: 2px solid var(--panel); box-shadow: 0 1px 5px rgba(0, 0, 0, .35); }
+.dot svg, .pin svg { width: 62%; height: 62%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.green { --c: var(--green); } .water { --c: var(--water); } .issue { --c: var(--alert); }
+
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.mapwrap { min-width: 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--land); }
+#map { height: clamp(420px, 70vh, 680px); background: var(--land); font-family: var(--font-body); }
+.leaflet-marker-icon:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; border-radius: 50%; }
+.river { stroke: var(--water); stroke-opacity: .32; }
+.canal { stroke: var(--water); stroke-opacity: .85; }
+.dlabel { font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-align: center; white-space: nowrap; pointer-events: none; }
+.leaflet-bar { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0, 0, 0, .18); }
+.leaflet-bar a { display: block; width: 34px; height: 34px; line-height: 33px; text-align: center; text-decoration: none; font-size: 18px; color: var(--fg); background: var(--panel); }
+.leaflet-bar a + a { border-top: 1px solid var(--line); }
+.leaflet-control-scale-line { padding: 1px 6px; font-size: 11px; color: var(--fg); background: var(--panel-a); border: 2px solid var(--muted); border-top: none; white-space: nowrap; }
+
+.list { min-width: 0; display: flex; flex-direction: column; gap: 14px; max-height: clamp(420px, 70vh, 680px); overflow-y: auto; padding-right: 2px; }
+.group h2 { margin: 0 0 6px; font-family: var(--font-display); font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.item { width: 100%; display: flex; flex-direction: column; gap: 0; text-align: left; font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+.item:hover { border-color: var(--c); }
+.item b { font-weight: 600; font-size: 14px; }
+.item span { font-size: 12.5px; color: var(--muted); }
+
+.pop { width: 250px; max-width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.pop-kind { align-self: flex-start; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
+.pop h3 { margin: 0; font-family: var(--font-display); font-size: 18px; line-height: 1.2; }
+.pop p { margin: 0; font-size: 13.5px; line-height: 1.5; }
+.pop-data { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; font-size: 12.5px; border: 1px dashed var(--c); border-radius: 8px; }
+.pop-data .lab { font-weight: 600; color: var(--c); }
+.pop-data .src { color: var(--muted); }
+.pill { align-self: flex-start; font-size: 11.5px; font-weight: 500; padding: 2px 9px; border-radius: 999px; background: var(--land); color: var(--muted); border: 1px solid var(--line); }
+
+.note { margin: 0; max-width: 90ch; font-size: 13px; color: var(--muted); }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .list { max-height: none; overflow: visible; }
+  #map { height: 62vh; min-height: 380px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .leaflet-zoom-anim .leaflet-zoom-animated, .leaflet-fade-anim .leaflet-popup { transition: none; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">Nhóm 3 · Ứng dụng AI</p>
+    <h1>Bản đồ sức khỏe TP.HCM</h1>
+    <p class="lede">Ba lớp thông tin: không gian xanh, sông và kênh rạch, vấn đề môi trường. Bật hoặc tắt từng lớp, rồi bấm vào điểm ghim để đọc chú thích.</p>
+  </header>
+
+  <div class="chips" id="chips" role="group" aria-label="Lớp bản đồ"></div>
+
+  <main class="app">
+    <div class="mapwrap"><div id="map" role="application" aria-label="Bản đồ sức khỏe TP.HCM"></div></div>
+    <aside class="list" id="list" aria-label="Danh sách điểm ghim"></aside>
+  </main>
+
+  <p class="note">Nền bản đồ là sơ đồ minh họa. Vị trí điểm ghim theo tọa độ thực, còn đường sông và kênh được vẽ gần đúng. Các khung "Số liệu cần điền" để nhóm bổ sung từ báo cáo môi trường chính thức, kèm nguồn và năm.</p>
+</div>
+
+<script>
+var TILES = false;
+
+var ICONS = {
+  green: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v7"/><path d="M11 9C8 8 5 11 5 16c0 2 2 3 4 2l2-1z"/><path d="M13 9c3-1 6 2 6 7 0 2-2 3-4 2l-2-1z"/></svg>',
+  water: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4C9 9 7 11.5 7 14.5a5 5 0 0 0 10 0C17 11.5 15 9 12 4z"/></svg>',
+  issue: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l8 14H4z"/><path d="M12 10v4"/><path d="M12 16.6v.2"/></svg>'
+};
+
+var LAYERS = {
+  green: { name: 'Không gian xanh', data: 'Diện tích (ha), số cây, tỷ lệ che phủ' },
+  water: { name: 'Sông - kênh rạch', data: 'DO, BOD, COD, NH4+ (mg/L) mới nhất' },
+  issue: { name: 'Vấn đề môi trường', data: 'Mức độ, tần suất, số đo nếu có' }
+};
+
+var POINTS = [
+  { l: 'green', n: 'Công viên Tao Đàn', a: 'Khu trung tâm', ll: [10.7742, 106.6928], d: 'Công viên lớn giữa khu trung tâm, nhiều cây cổ thụ. Buổi sáng là nơi người dân tập thể dục và sinh hoạt câu lạc bộ.' },
+  { l: 'green', n: 'Thảo Cầm Viên Sài Gòn', a: 'Cạnh kênh Thị Nghè', ll: [10.7878, 106.7050], d: 'Vườn thú và vườn thực vật có từ năm 1864, nằm cạnh kênh Nhiêu Lộc - Thị Nghè. Là một mảng xanh lớn và lâu đời của thành phố.' },
+  { l: 'green', n: 'Công viên Lê Văn Tám', a: 'Khu trung tâm', ll: [10.7883, 106.6905], d: 'Công viên nội đô nhiều cây bóng mát, gần tuyến kênh Nhiêu Lộc - Thị Nghè. Nhóm có thể khảo sát mật độ cây và lượng người sử dụng.' },
+  { l: 'green', n: 'Công viên 23/9', a: 'Cạnh chợ Bến Thành', ll: [10.7695, 106.6937], d: 'Công viên cạnh khu chợ Bến Thành, tạo khoảng thở giữa khu vực đông dân và nhiều xe cộ.' },
+  { l: 'green', n: 'Công viên Gia Định', a: 'Phía bắc trung tâm', ll: [10.8130, 106.6785], d: 'Công viên rộng ở phía bắc trung tâm, nhiều cây lớn, phục vụ tập luyện và nghỉ ngơi cho các khu dân cư lân cận.' },
+  { l: 'green', n: 'Công viên Hoàng Văn Thụ', a: 'Gần sân bay Tân Sơn Nhất', ll: [10.7985, 106.6615], d: 'Công viên nằm trên trục đường lớn gần sân bay. Dùng để so sánh mảng xanh ở khu vực có nhiều giao thông.' },
+  { l: 'green', n: 'Công viên Bến Bạch Đằng', a: 'Bờ sông Sài Gòn', ll: [10.7708, 106.7064], d: 'Công viên đi bộ ven sông Sài Gòn, nơi người dân tiếp cận bờ sông và gió mát. Điểm tốt để so sánh mảng xanh với mặt nước.' },
+
+  { l: 'water', n: 'Sông Sài Gòn (khúc Thanh Đa)', a: 'Phía đông', ll: [10.8190, 106.7270], d: 'Sông chảy dọc phía đông thành phố, là nguồn nước mặt quan trọng và nơi tiếp nhận nước từ hệ thống kênh rạch nội đô.' },
+  { l: 'water', n: 'Kênh Nhiêu Lộc - Thị Nghè', a: 'Từ Tân Bình ra sông', ll: [10.7915, 106.6900], d: 'Tuyến kênh dài chạy qua nhiều khu dân cư rồi đổ ra sông Sài Gòn. Đã được cải tạo, có đường đi bộ và cây xanh ven bờ.' },
+  { l: 'water', n: 'Cửa kênh Nhiêu Lộc ra sông', a: 'Hợp lưu với sông Sài Gòn', ll: [10.7882, 106.7138], d: 'Điểm hợp lưu của kênh với sông Sài Gòn, thuận tiện để so sánh chất lượng nước trong kênh với nước sông.' },
+  { l: 'water', n: 'Kênh Tàu Hủ - Bến Nghé', a: 'Về phía Chợ Lớn', ll: [10.7520, 106.6830], d: 'Tuyến kênh nối sông Sài Gòn với khu Chợ Lớn và phía tây nam, từng là trục giao thương. Nước kênh chịu ảnh hưởng của thủy triều.' },
+  { l: 'water', n: 'Kênh Tân Hóa - Lò Gốm', a: 'Phía tây', ll: [10.7650, 106.6350], d: 'Kênh chạy qua khu dân cư đông ở phía tây, thường nằm trong các chương trình cải tạo kênh rạch. Cần số liệu mới nhất để đánh giá hiện trạng.' },
+
+  { l: 'issue', n: 'Ngập khi triều cường, đường Nguyễn Hữu Cảnh', a: 'Ven sông Sài Gòn', ll: [10.7945, 106.7215], d: 'Đoạn đường ven sông dễ ngập khi triều cường kết hợp mưa lớn. Nhóm nên đối chiếu với bản tin triều cường và báo cáo ngập.' },
+  { l: 'issue', n: 'Bụi và khí thải, ngã tư Hàng Xanh', a: 'Cửa ngõ phía đông bắc', ll: [10.8018, 106.7112], d: 'Nút giao đông xe cộ, có thể ảnh hưởng chất lượng không khí và tiếng ồn. Cần số liệu quan trắc không khí gần nhất để kết luận.' },
+  { l: 'issue', n: 'Bụi và khí thải, ngã tư Bảy Hiền', a: 'Cửa ngõ phía tây', ll: [10.7935, 106.6527], d: 'Cửa ngõ phía tây có mật độ giao thông cao. Nhóm có thể tra số liệu bụi mịn PM2.5 từ trạm quan trắc gần nhất.' },
+  { l: 'issue', n: 'Rác trên kênh Tàu Hủ - Bến Nghé', a: 'Điểm khảo sát gợi ý', ll: [10.7500, 106.6760], d: 'Vị trí gợi ý để khảo sát rác thải sinh hoạt trên mặt kênh. Chụp ảnh hiện trạng, ghi ngày giờ và mô tả mức độ.' }
+];
+
+var RIVER = [[10.8400,106.7200],[10.8340,106.7240],[10.8230,106.7330],[10.8130,106.7340],[10.8040,106.7390],[10.7960,106.7340],[10.7900,106.7200],[10.7840,106.7090],[10.7740,106.7060],[10.7650,106.7070],[10.7580,106.7130],[10.7500,106.7260],[10.7400,106.7330]];
+var CANALS = [
+  [[10.7985,106.6560],[10.7960,106.6700],[10.7905,106.6830],[10.7900,106.6930],[10.7915,106.7010],[10.7930,106.7080],[10.7880,106.7140]],
+  [[10.7610,106.7100],[10.7570,106.7000],[10.7540,106.6900],[10.7500,106.6760],[10.7470,106.6620],[10.7440,106.6500],[10.7400,106.6380]],
+  [[10.7880,106.6380],[10.7780,106.6370],[10.7680,106.6350],[10.7580,106.6340],[10.7450,106.6360]]
+];
+var PLACES = [['Bến Thành',10.7740,106.6990],['Chợ Lớn',10.7545,106.6600],['Thị Nghè',10.7960,106.7040],['Thanh Đa',10.8140,106.7190],['Thủ Thiêm',10.7800,106.7260],['Tân Sơn Nhất',10.8120,106.6560]];
+
+var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+var map = L.map('map', { minZoom: 11, maxZoom: 18, zoomSnap: 0.5, attributionControl: TILES });
+map.fitBounds([[10.738, 106.618], [10.838, 106.752]]);
+if (TILES) {
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+}
+L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+
+var groups = { green: L.layerGroup(), water: L.layerGroup(), issue: L.layerGroup() };
+
+L.polyline(RIVER, { className: 'river', weight: 14, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(groups.water);
+CANALS.forEach(function (c) { L.polyline(c, { className: 'canal', weight: 4, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(groups.water); });
+PLACES.forEach(function (p) {
+  L.marker([p[1], p[2]], { interactive: false, keyboard: false, icon: L.divIcon({ className: '', html: '<div class="dlabel">' + p[0] + '</div>', iconSize: [110, 16], iconAnchor: [55, 8] }) }).addTo(map);
+});
+
+function popupHtml(p) {
+  var L0 = LAYERS[p.l];
+  return '<div class="pop ' + p.l + '">' +
+    '<span class="pop-kind">' + L0.name + '</span>' +
+    '<h3>' + p.n + '</h3><p>' + p.d + '</p>' +
+    '<div class="pop-data"><span class="lab">Số liệu cần điền</span><span>' + L0.data + '</span><span class="src">Nguồn: ______ · Năm: ____</span></div>' +
+    '<span class="pill">Cần bổ sung số liệu</span></div>';
+}
+
+POINTS.forEach(function (p) {
+  p.m = L.marker(p.ll, {
+    title: p.n,
+    icon: L.divIcon({ className: '', html: '<span class="pin ' + p.l + '">' + ICONS[p.l] + '</span>', iconSize: [34, 34], iconAnchor: [17, 17], popupAnchor: [0, -18] })
+  }).bindPopup(popupHtml(p), { maxWidth: 280, autoPanPadding: [24, 24] });
+  p.m.addTo(groups[p.l]);
+});
+Object.keys(groups).forEach(function (k) { groups[k].addTo(map); });
+
+function focusPoint(p) {
+  var z = Math.max(map.getZoom(), 15);
+  if (reduce) { map.setView(p.ll, z, { animate: false }); p.m.openPopup(); }
+  else { map.flyTo(p.ll, z, { duration: 0.6 }); setTimeout(function () { p.m.openPopup(); }, 680); }
+  document.getElementById('map').scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
+}
+
+var chips = document.getElementById('chips');
+var list = document.getElementById('list');
+Object.keys(LAYERS).forEach(function (k) {
+  var count = POINTS.filter(function (p) { return p.l === k; }).length;
+
+  var b = document.createElement('button');
+  b.type = 'button'; b.className = 'chip ' + k; b.id = 'chip-' + k; b.setAttribute('aria-pressed', 'true');
+  b.innerHTML = '<span class="dot ' + k + '">' + ICONS[k] + '</span><span class="chip-t">' + LAYERS[k].name + '</span><span class="chip-n">' + count + '</span>';
+  chips.appendChild(b);
+
+  var sec = document.createElement('section');
+  sec.className = 'group ' + k; sec.id = 'group-' + k;
+  var h = document.createElement('h2');
+  h.innerHTML = '<span class="dot ' + k + '">' + ICONS[k] + '</span>' + LAYERS[k].name;
+  var ul = document.createElement('ul');
+  POINTS.filter(function (p) { return p.l === k; }).forEach(function (p) {
+    var li = document.createElement('li');
+    var it = document.createElement('button');
+    it.type = 'button'; it.className = 'item ' + k;
+    it.innerHTML = '<b>' + p.n + '</b><span>' + p.a + '</span>';
+    it.addEventListener('click', function () { focusPoint(p); });
+    li.appendChild(it); ul.appendChild(li);
+  });
+  sec.appendChild(h); sec.appendChild(ul); list.appendChild(sec);
+
+  b.addEventListener('click', function () {
+    var on = b.getAttribute('aria-pressed') === 'true';
+    b.setAttribute('aria-pressed', on ? 'false' : 'true');
+    if (on) { map.removeLayer(groups[k]); } else { groups[k].addTo(map); }
+    sec.hidden = on;
+  });
+});
+</script>
+
+</body></html>
